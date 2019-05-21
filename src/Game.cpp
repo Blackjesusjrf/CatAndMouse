@@ -29,7 +29,7 @@ bool Game::Init(const char* title, int xpos, int ypos, int width, int height, in
 				if (IMG_Init(IMG_INIT_PNG) != 0) {
 					// Create pixel maps.
 					SDL_Surface* tileSurface = IMG_Load("../Assets/textures/Tiles.png");
-					SDL_Surface* playerSurface = IMG_Load("../Assets/textures/PacMan.png");
+					SDL_Surface* playerSurface = IMG_Load("../Assets/textures/mouse.png");
 					SDL_Surface* ghostsSurface = IMG_Load("../Assets/textures/Cats.png");
 					m_pTileTexture = SDL_CreateTextureFromSurface(m_pRenderer, tileSurface);
 					m_pPlayerTexture = SDL_CreateTextureFromSurface(m_pRenderer, playerSurface);
@@ -139,12 +139,17 @@ void Game::PlayerGhostsInteractions() {
 	// Handles player eating a ghost
 	for (int i = 0; i < 4; i++) {
 		if (SDL_HasIntersection(m_pPlayer->GetDstP(), m_pCats[i]->GetDstP()) && !m_pPlayer->isMoving()) {
-			if (m_pPlayer->isPoweredUp()) {
-				m_pCats[i]->Die();
-			}
-			else {
-				m_pPlayer->Die();
-				m_bRunning = false;
+			if (!m_pCats[i]->isDead())
+			{
+				if (m_pPlayer->isPoweredUp())
+				{
+					m_pCats[i]->Die();
+				}
+				else
+				{
+					m_pPlayer->Die();
+					m_bRunning = false;
+				}
 			}
 		}
 	}
@@ -162,6 +167,7 @@ void Game::PlayerMovements() {
 	if (!m_pPlayer->isDead() && !m_pPlayer->isMoving()) {
 		if (KeyDown(SDL_SCANCODE_W)) {
 			if (!m_level.m_Map[m_pPlayer->GetY() - 1][m_pPlayer->GetX()].isObstacle()) {
+				m_pPlayer->angle = 0;
 				m_pPlayer->SetDestinationY(m_pPlayer->GetDst().y - 32);
 				m_pPlayer->SetDestinationX(m_pPlayer->GetDst().x);
 				m_pPlayer->SetMoving(true);
@@ -169,6 +175,7 @@ void Game::PlayerMovements() {
 		}
 		else if (KeyDown(SDL_SCANCODE_S)) {
 			if (!m_level.m_Map[m_pPlayer->GetY() + 1][m_pPlayer->GetX()].isObstacle()) {
+				m_pPlayer->angle = 180;
 				m_pPlayer->SetDestinationY(m_pPlayer->GetDst().y + 32);
 				m_pPlayer->SetDestinationX(m_pPlayer->GetDst().x);
 				m_pPlayer->SetMoving(true);
@@ -177,6 +184,7 @@ void Game::PlayerMovements() {
 		else if (KeyDown(SDL_SCANCODE_A)) {
 			if (!m_level.m_Map[m_pPlayer->GetY()][m_pPlayer->GetX() - 1].isObstacle())
 			{
+				m_pPlayer->angle = 270;
 				m_pPlayer->SetDestinationX(m_pPlayer->GetDst().x - 32);
 				m_pPlayer->SetDestinationY(m_pPlayer->GetDst().y);
 				m_pPlayer->SetMoving(true);
@@ -184,6 +192,7 @@ void Game::PlayerMovements() {
 		}
 		else if (KeyDown(SDL_SCANCODE_D)) {
 			if (!m_level.m_Map[m_pPlayer->GetY()][m_pPlayer->GetX() + 1].isObstacle()) {
+				m_pPlayer->angle = 90;
 				m_pPlayer->SetDestinationX(m_pPlayer->GetDst().x + 32);
 				m_pPlayer->SetDestinationY(m_pPlayer->GetDst().y);
 				m_pPlayer->SetMoving(true);
@@ -192,6 +201,8 @@ void Game::PlayerMovements() {
 	}
 
 	if (m_pPlayer->isMoving()) {
+		// animate player if moving
+		m_pPlayer->animate();
 		if (m_pPlayer->GetDestinationX() > m_pPlayer->GetDst().x) {
 			m_pPlayer->MoveX(1);
 		}
@@ -226,7 +237,7 @@ void Game::Render() {
 	}
 
 	// Render player
-	SDL_RenderCopy(m_pRenderer, m_pPlayerTexture, m_pPlayer->GetSrcP(), m_pPlayer->GetDstP());
+	SDL_RenderCopyEx(m_pRenderer, m_pPlayerTexture, m_pPlayer->GetSrcP(), m_pPlayer->GetDstP(),m_pPlayer->angle,&m_pPlayer->center,SDL_FLIP_NONE);
 
 	SDL_RenderPresent(m_pRenderer);
 }
